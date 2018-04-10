@@ -59,6 +59,7 @@ int main() {
     TRISAbits.TRISA4 = 0; // output pin
     TRISBbits.TRISB4 = 1; // input pin button
     LATAbits.LATA4 = 1; // sets A4 to high initially for testing
+    int alternater = 1; // keeps track if on or off
     
 
     __builtin_enable_interrupts();
@@ -68,6 +69,20 @@ int main() {
         // use _CP0_SET_COUNT(0) and _CP0_GET_COUNT() to test the PIC timing
         // remember the core timer runs at half the sysclk
         // sysclk is at 48MHz
+        while(PORTBbits.RB4 == 0){
+            //do nothing and pause 
+        }
+        // core timer half of sysclk -- core timer is 24KHZ, want full cycle 2HZ, divide by 12000
+        if(_CP0_GET_COUNT() > 12000){
+            if(alternater == 1){
+                alternater = 0;
+                LATAbits.LATA4 = 0;
+            }else {
+                alternater = 1;
+                LATAbits.LATA4 = 1;
+            }
+            _CP0_SET_COUNT(0);
+        }
         
         
     }
