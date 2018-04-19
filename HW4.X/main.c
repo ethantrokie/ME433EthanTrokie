@@ -48,7 +48,7 @@ void initSPI1(){
     TRISBbits.TRISB8 = 0; // output pin for cs
     SPI1CON = 0;              // turn off the spi module and reset it
     SPI1BUF;  
-    SPI1BRG = 1000;
+    SPI1BRG = 1; // frequency 1 is high 1000 is low
     SPI1STATbits.SPIROV = 0; 
     SPI1CONbits.CKE = 1;      // data changes when clock goes from hi to lo (since CKP is 0)
     SPI1CONbits.MSTEN = 1;    // master operation
@@ -103,8 +103,29 @@ int main() {
 
     _CP0_SET_COUNT(0);
     int i = 0;
+    int j = 0;
+    int up = 1;
+    int counter = 0;
+    const float multiplier = 3.47;
     while(1) {
-        
+        setVoltage(0,512+ 512.0*sin(i*2.0*3.14/3500.0));
+        i++;
+ 
+        if(up == 1){
+            if(j < 1023*multiplier){
+              j++; 
+            }else{
+              up = 0;
+            }  
+        }
+        if(up == 0){
+            if(j > 0){
+              j--; 
+            }else{
+              up = 1;
+            }  
+        }
+        setVoltage(1,(int)((float)j/multiplier));
         
         
         //setVoltage(1,512);
@@ -115,14 +136,7 @@ int main() {
 //            //do nothing and pause 
 //        }
         // core timer half of sysclk -- core timer is 24KHZ, want full cycle 2HZ, divide by 12000
-        if(_CP0_GET_COUNT() > 12000){
-         
-            setVoltage(0,1023);
-            setVoltage(1,512);
-//            setVoltage(0,i);
-//            i++;
-            _CP0_SET_COUNT(0);
-        }
+        
     }
      
 }
