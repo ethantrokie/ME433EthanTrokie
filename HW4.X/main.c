@@ -103,29 +103,18 @@ int main() {
 
     _CP0_SET_COUNT(0);
     int i = 0;
-    int j = 0;
-    int up = 1;
-    int counter = 0;
-    const float multiplier = 3.47;
     while(1) {
-        setVoltage(0,512+ 512.0*sin(i*2.0*3.14/3500.0));
-        i++;
+        _CP0_SET_COUNT(0);
+        setVoltage(0, 512 + 512.0*sin(i*2.0*3.14/100));
  
-        if(up == 1){
-            if(j < 1023*multiplier){
-              j++; 
-            }else{
-              up = 0;
-            }  
+        if (i%200 < 100) {
+            setVoltage(1,(int)((float) (i%200) / 100 * 1023));
         }
-        if(up == 0){
-            if(j > 0){
-              j--; 
-            }else{
-              up = 1;
-            }  
+        else {
+            setVoltage(1, (int) ((float)(200- i%200) / 100 * 1023));         
         }
-        setVoltage(1,(int)((float)j/multiplier));
+        i++;
+        
         
         
         //setVoltage(1,512);
@@ -136,7 +125,9 @@ int main() {
 //            //do nothing and pause 
 //        }
         // core timer half of sysclk -- core timer is 24KHZ, want full cycle 2HZ, divide by 12000
-        
+        while(_CP0_GET_COUNT() < 24000){
+        ; //do nada
+        }
     }
      
 }
