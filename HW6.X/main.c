@@ -46,10 +46,14 @@ void drawchar(short x, short y, char mess, short c1, short c2){
         char pixels = ASCII[row][col];
         int j;
         for(j = 0; j < 8; j++){
-        if((pixels >> j & 1) == 1 ){
+        if((pixels >> j & 1) == 1){
+            if((x+col < 128) && (y+j < 160)){
             LCD_drawPixel(x+col,y+j,c1);
+            }
         }else{
+            if((x+col < 128) && (y+j < 160)){
             LCD_drawPixel(x+col,y+j,c2);
+            }
         }
        }
     }  
@@ -99,16 +103,14 @@ int main() {
     int alternater = 1; // keeps track if on or off
     LCD_init();
     LCD_clearScreen(0x0000);
-    char message[30];
-    sprintf(message,"Hello World");
-    drawString(30,10,message,0xFFFF,0x0000);
-    drawBox(10,60,100,WHITE);
+    drawBox(15,60,100,WHITE);
 
     __builtin_enable_interrupts();
 
     _CP0_SET_COUNT(0);
     
     short count = 0;
+    short fps = 0;
     while(1) {
         // use _CP0_SET_COUNT(0) and _CP0_GET_COUNT() to test the PIC timing
         // remember the core timer runs at half the sysclk
@@ -116,34 +118,26 @@ int main() {
         while(PORTBbits.RB4 == 0){
             //do nothing and pause 
         }
-        // core timer half of sysclk -- core timer is 24KHZ, want full cycle 2HZ, divide by 12000
-//        if(_CP0_GET_COUNT() > 12000){
-//            if(alternater == 1){
-//                alternater = 0;
-//                LATAbits.LATA4 = 0;
-//            }else {
-//                alternater = 1;
-//                LATAbits.LATA4 = 1;
-//            }
-//            if(count == 100){
-//                count == 0;
-//                drawBox(10,60,110,WHITE);
-//            }
-//            drawLine(10+count,60,8,BLUE);
-//            
-//            
-//            
-//            _CP0_SET_COUNT(0);
-//        }
-         if(_CP0_GET_COUNT() > 1200000){
+         if(_CP0_GET_COUNT() > 2400000){
+             fps++;
+            //status bar
             if(count == 100){
                 count = 0;
-                drawBox(10,60,100,WHITE);
+                drawBox(15,60,100,WHITE);
             }
-            drawLine(10+count,60,8,BLUE);
+            drawLine(15+count,60,8,BLUE);
             count++;
+            //message for status bar
+            char message2[30];
+            sprintf(message2,"Hello world %d!  ",count);
+            drawString(28,32,message2,0xFFFF,0x0000);
             
             
+            char message3[30];
+            
+            sprintf(message3,"FPS %d  ",fps);
+            drawString(28,100,message3,0xFFFF,0x0000);
+            fps = (24000000.0/_CP0_GET_COUNT());
             _CP0_SET_COUNT(0);
         }
         
