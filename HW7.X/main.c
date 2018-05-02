@@ -241,14 +241,10 @@ int main() {
             dataReal[4] = (data[9]<<8) | data[8];
             dataReal[5] = (data[11]<<8) | data[10];
             dataReal[6] = (data[13]<<8) | data[12];
-            char message2[30];
-            sprintf(message2,"x %d y: %d    ",dataReal[4],dataReal[5]);
-            drawString(28,32,message2,0xFFFF,0x0000);  
+//            char message2[30];
+//            sprintf(message2,"x %d y: %d    ",dataReal[4],dataReal[5]);
+//            drawString(28,32,message2,0xFFFF,0x0000);  
             
-//            drawHBox(80,80,50,WHITE, 1);
-//            drawHBox(80,80,50,WHITE, 0);
-//            drawVBox(80,80,50,WHITE, 1);
-//            drawVBox(80,80,50,WHITE, 0);
             if(dataReal[4] > 0){
             drawHBox(80,80,abs(dataReal[4])*50.0/16000.0,50,BLUE,0);
             }else{
