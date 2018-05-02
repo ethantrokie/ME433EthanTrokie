@@ -68,18 +68,55 @@ void drawString(short x, short y, char* mess, short c1, short c2){
     }
 }
 
-void drawLine(short x, short y, short height,short color){
+void drawVLine(short x, short y, short height,short color){
     int i;
     for(i = 0; i < height; i++){
         LCD_drawPixel(x,y+i,color);
     }
 }
-void drawBox(short x, short y, short width,short color1){
+void drawHBox(short x, short y, short width, short total, short color1,int pos){
     int i;
     for(i = 0; i < width; i++){
-        drawLine(x+i,y,8,color1);
+        if(pos == 1){
+            drawVLine(x+i,y,4,color1);
+        }else{
+            drawVLine(x-i,y,4,color1);
+        }
+    }
+    for(i = width; i < total; i++){
+        if(pos == 1){
+            drawVLine(x+i,y,4,WHITE);
+        }else{
+            drawVLine(x-i,y,4,WHITE);
+        }
     }
 }
+
+
+void drawHLine(short x, short y, short width, short color){
+    int i;
+    for(i = 0; i < width; i++){
+        LCD_drawPixel(x+i,y,color);
+    }
+}
+void drawVBox(short x, short y, short height,short total,short color1,int pos){
+    int i;
+    for(i = 0; i < height; i++){
+        if(pos == 1){
+            drawHLine(x,y+i,4,color1);
+        }else{
+            drawHLine(x,y-i,4,color1);
+        }
+    }
+    for(i = height; i < total; i++){
+        if(pos == 1){
+            drawHLine(x,y+i,4,WHITE);
+        }else{
+            drawHLine(x,y-i,4,WHITE);
+        }
+    }
+}
+
 
 void initExpander(){
     
@@ -159,17 +196,20 @@ int main() {
 
     __builtin_enable_interrupts();
 
+    drawHBox(80,80,50,50,WHITE, 1);
+    drawHBox(80,80,50,50,WHITE, 0);
+    drawVBox(80,80,50,50,WHITE, 1);
+    drawVBox(80,80,50,50,WHITE, 0);
+    
     _CP0_SET_COUNT(0);
-    char data[14];
+    unsigned char data[14];
     short dataReal[7];
     while(1) {
         char message1[30];
-        if(getExpander() == 0x69){
-            sprintf(message1,"I know who I am");
+        if(getExpander() != 0x69){
+            sprintf(message1,"PROBLEM");
             drawString(28,62,message1,0xFFFF,0x0000);
-        }else{
-            sprintf(message1,"WHO AM I");
-            drawString(28,62,message1,0xFFFF,0x0000);
+            while(1){;}
         }
 //        if(getExpander()>>7 == 1){
 //            setExpander(0xA,1);
@@ -202,8 +242,25 @@ int main() {
             dataReal[5] = (data[11]<<8) | data[10];
             dataReal[6] = (data[13]<<8) | data[12];
             char message2[30];
-            sprintf(message2,"x %d y: %d z:%d",dataReal[1],dataReal[2],dataReal[3]);
-            drawString(28,32,message2,0xFFFF,0x0000);      
+            sprintf(message2,"x %d y: %d    ",dataReal[4],dataReal[5]);
+            drawString(28,32,message2,0xFFFF,0x0000);  
+            
+//            drawHBox(80,80,50,WHITE, 1);
+//            drawHBox(80,80,50,WHITE, 0);
+//            drawVBox(80,80,50,WHITE, 1);
+//            drawVBox(80,80,50,WHITE, 0);
+            if(dataReal[4] > 0){
+            drawHBox(80,80,abs(dataReal[4])*50.0/16000.0,50,BLUE,0);
+            }else{
+            drawHBox(80,80,abs(dataReal[4])*50.0/16000.0,50,BLUE,1);    
+            }
+            if(dataReal[5] > 0){
+            drawVBox(80,80,abs(dataReal[5])*50.0/16000.0,50,BLUE,0 );
+            }else{
+            drawVBox(80,80,abs(dataReal[5])*50.0/16000.0,50,BLUE,1 );   
+            }
+            
+            
             _CP0_SET_COUNT(0);
         }
         
