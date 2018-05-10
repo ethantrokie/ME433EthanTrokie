@@ -284,8 +284,6 @@ void APP_Initialize ( void )
     drawHBox(80,80,50,50,WHITE, 0);
     drawVBox(80,80,50,50,WHITE, 1);
     drawVBox(80,80,50,50,WHITE, 0);
-
-    __builtin_enable_interrupts();
     
     _CP0_SET_COUNT(0);
     /* TODO: Initialize your application's state machine and other
