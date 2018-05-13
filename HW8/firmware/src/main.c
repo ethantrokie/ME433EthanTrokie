@@ -59,7 +59,6 @@ SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
 #include <stdbool.h>                    // Defines true
 #include <stdlib.h>                     // Defines EXIT_FAILURE
 #include "system/common/sys_module.h"   // SYS function prototypes
-#include "i2c_master_noint.h"
 
 
 // *****************************************************************************
@@ -67,49 +66,6 @@ SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
 // Section: Main Entry Point
 // *****************************************************************************
 // *****************************************************************************
-
-void initExpander(){
-    
-    ANSELBbits.ANSB2 = 0;
-    ANSELBbits.ANSB3 = 0;
-    i2c_master_setup();
-}
-
-void setExpander(char reg, char level){
-    i2c_master_start();
-    i2c_master_send(0b1101011<<1|0);
-    i2c_master_send(reg); // the register to write to
-    i2c_master_send(level); // the value to put in the register
-    i2c_master_stop();
-}
-unsigned char getExpander(){
-    i2c_master_start();
-    i2c_master_send(0b1101011<<1|0);
-    i2c_master_send(0x0F);
-    i2c_master_restart(); // make the restart bit
-    i2c_master_send(0b1101011<<1|1);
-    unsigned char r = i2c_master_recv(); // save the value returned
-    i2c_master_ack(1);
-    i2c_master_stop(); // make the stop bit
-    return r;
-}
-void I2C_read_multiple(unsigned char address, unsigned char reg, unsigned char * data, int length){
-    i2c_master_start();
-    i2c_master_send(0b1101011<<1|0);
-    i2c_master_send(reg);
-    i2c_master_restart(); // make the restart bit
-    i2c_master_send(0b1101011<<1|1);
-    int i = 0;
-    for(i = 0; i < length; i++){
-        data[i] = i2c_master_recv(); // save the value returned
-        if (i < (length - 1)){
-        i2c_master_ack(0);
-        }else{
-        i2c_master_ack(1);
-        }
-    }  
-    i2c_master_stop(); // make the stop bit
-}
 
 int main ( void )
 {
