@@ -435,6 +435,7 @@ void APP_Initialize(void) {
 int alternater = 1;
 unsigned char data[14];
 short dataReal[7];
+int writeToScreen = 0;
 void APP_Tasks(void) {
     /* Update the application state machine based
      * on the current state */
@@ -490,9 +491,9 @@ void APP_Tasks(void) {
                         WAS RECEIVED (USUALLY IT IS THE NULL CHARACTER BECAUSE NOTHING WAS
                       TYPED) */
                 if(readBuffer[0] == 'r'){
-                    appData.state = APP_STATE_SCHEDULE_WRITE;
+                    writeToScreen = 1;
+                    i = 0;
                 }
-
                 if (appData.readTransferHandle == USB_DEVICE_CDC_TRANSFER_HANDLE_INVALID) {
                     appData.state = APP_STATE_ERROR;
                     break;
@@ -521,13 +522,14 @@ void APP_Tasks(void) {
 
 
         case APP_STATE_SCHEDULE_WRITE:
+            
 
             if (APP_StateReset()) {
                 break;
             }
 
             /* Setup the write */
-
+            
             appData.writeTransferHandle = USB_DEVICE_CDC_TRANSFER_HANDLE_INVALID;
             appData.isWriteComplete = false;
             appData.state = APP_STATE_WAIT_FOR_WRITE_COMPLETE;
@@ -539,14 +541,14 @@ void APP_Tasks(void) {
             char message1[30];
             if(getExpander() != 0x69){
                 sprintf(message1,"PROBLEM");
-                while(1){;}
+                while(1){LATAbits.LATA4 = 0;}
             }
 
             while(PORTBbits.RB4 == 0){
                 //do nothing and pause 
             }
             // core timer half of sysclk -- core timer is 24MHZ, want full cycle 2HZ, divide by 12000
-            if(_CP0_GET_COUNT() > 4800000){
+            if(_CP0_GET_COUNT() > 240000){
                 if(alternater == 1){
                     alternater = 0;
                     LATAbits.LATA4 = 0;
@@ -567,36 +569,32 @@ void APP_Tasks(void) {
     //            char message2[30];
     //            sprintf(message2,"x %d y: %d    ",dataReal[4],dataReal[5]);
     //            drawString(28,32,message2,0xFFFF,0x0000);  
-
-               
-
-
                 _CP0_SET_COUNT(0);
             
             }
-            
-            
-            
-            
-            
-            
-            
-            len = sprintf(dataOut, "%d\r\n", dataReal[4]);
-            i++; // increment the index so we see a change in the text
+ 
+            //len = sprintf(dataOut, "%d\r\n", writeToScreen);
+            if(writeToScreen == 1){
+                len = sprintf(dataOut, "%d\r\n", dataReal[4]);
+            }else{
+                len = sprintf(dataOut, "%d\r\n", writeToScreen);
+            }
             /* IF A LETTER WAS RECEIVED, ECHO IT BACK SO THE USER CAN SEE IT */
-            if (appData.isReadComplete) {
+            if (appData.isReadComplete) {              
                 USB_DEVICE_CDC_Write(USB_DEVICE_CDC_INDEX_0,
                         &appData.writeTransferHandle,
                         appData.readBuffer, 1,
                         USB_DEVICE_CDC_TRANSFER_FLAGS_DATA_COMPLETE);
             }
             /* ELSE SEND THE MESSAGE YOU WANTED TO SEND */
-            else {
+            else {   
+//            if(writeToScreen == 1){
                 USB_DEVICE_CDC_Write(USB_DEVICE_CDC_INDEX_0,
                         &appData.writeTransferHandle, dataOut, len,
                         USB_DEVICE_CDC_TRANSFER_FLAGS_DATA_COMPLETE);
                 startTime = _CP0_GET_COUNT(); // reset the timer for acurate delays
             }
+
             break;
 
         case APP_STATE_WAIT_FOR_WRITE_COMPLETE:
