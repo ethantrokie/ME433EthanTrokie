@@ -56,6 +56,7 @@ SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
 #include "app.h"
 #include <stdio.h>
 #include <xc.h>
+#include "i2c_master_noint.h"
 
 // *****************************************************************************
 // *****************************************************************************
@@ -305,6 +306,56 @@ bool APP_StateReset(void) {
     See prototype in app.h.
  */
 
+void initExpander(){
+    
+    ANSELBbits.ANSB2 = 0;
+    ANSELBbits.ANSB3 = 0;
+    i2c_master_setup();
+}
+
+void setExpander(char reg, char level){
+    i2c_master_start();
+    i2c_master_send(0b1101011<<1|0);
+    i2c_master_send(reg); // the register to write to
+    i2c_master_send(level); // the value to put in the register
+    i2c_master_stop();
+}
+unsigned char getExpander(){
+    i2c_master_start();
+    i2c_master_send(0b1101011<<1|0);
+    i2c_master_send(0x0F);
+    i2c_master_restart(); // make the restart bit
+    i2c_master_send(0b1101011<<1|1);
+    unsigned char r = i2c_master_recv(); // save the value returned
+    i2c_master_ack(1);
+    i2c_master_stop(); // make the stop bit
+    return r;
+}
+void I2C_read_multiple(unsigned char address, unsigned char reg, unsigned char * data, int length){
+    i2c_master_start();
+    i2c_master_send(0b1101011<<1|0);
+    i2c_master_send(reg);
+    i2c_master_restart(); // make the restart bit
+    i2c_master_send(0b1101011<<1|1);
+    int i = 0;
+    for(i = 0; i < length; i++){
+        data[i] = i2c_master_recv(); // save the value returned
+        if (i < (length - 1)){
+        i2c_master_ack(0);
+        }else{
+        i2c_master_ack(1);
+        }
+    }  
+    i2c_master_stop(); // make the stop bit
+}
+
+
+
+int alternater = 1;
+unsigned char data[14];
+short dataReal[7];
+
+
 void APP_Initialize(void) {
     /* Place the App state machine in its initial state. */
     appData.state = APP_STATE_INIT;
@@ -341,7 +392,36 @@ void APP_Initialize(void) {
     appData.readBuffer = &readBuffer[0];
 
     /* PUT YOUR LCD, IMU, AND PIN INITIALIZATIONS HERE */
+    /* Place the App state machine in its initial state. */
+    appData.state = APP_STATE_INIT;
 
+     __builtin_disable_interrupts();
+
+    // set the CP0 CONFIG register to indicate that kseg0 is cacheable (0x3)
+    __builtin_mtc0(_CP0_CONFIG, _CP0_CONFIG_SELECT, 0xa4210583);
+
+    // 0 data RAM access wait states
+    BMXCONbits.BMXWSDRM = 0x0;
+
+    // enable multi vector interrupts
+    INTCONbits.MVEC = 0x1;
+
+    // disable JTAG to get pins back
+    DDPCONbits.JTAGEN = 0;
+
+    // do your TRIS and LAT commands here
+    
+    TRISAbits.TRISA4 = 0; // output pin
+    TRISBbits.TRISB4 = 1; // input pin button
+    LATAbits.LATA4 = 1; // sets A4 to high initially for testing
+     // keeps track if on or off
+    initExpander();
+    
+    setExpander(0x10,0b10000010); //set up accelarometer
+    setExpander(0x11,0b10001000);  //set all outputs as high
+    setExpander(0x12,0b00000100);
+
+    __builtin_enable_interrupts();
     startTime = _CP0_GET_COUNT();
 }
 
@@ -450,7 +530,57 @@ void APP_Tasks(void) {
             /* PUT THE TEXT YOU WANT TO SEND TO THE COMPUTER IN dataOut
             AND REMEMBER THE NUMBER OF CHARACTERS IN len */
             /* THIS IS WHERE YOU CAN READ YOUR IMU, PRINT TO THE LCD, ETC */
+//            
+//            
+//            
+//            
+//            char message1[30];
+//            if(getExpander() != 0x69){
+//                while(1){
+//                    LATAbits.LATA4 = 0;
+//                }
+//            }
+//    //        if(getExpander()>>7 == 1){
+//    //            setExpander(0xA,1);
+//    //        }else{
+//    //            setExpander(0xA,0);
+//    //        }
+//            // use _CP0_SET_COUNT(0) and _CP0_GET_COUNT() to test the PIC timing
+//            // remember the core timer runs at half the sysclk
+//            // sysclk is at 48MHz
+//            while(PORTBbits.RB4 == 0){
+//                //do nothing and pause 
+//            }
+//            // core timer half of sysclk -- core timer is 24MHZ, want full cycle 2HZ, divide by 12000
+//            if(_CP0_GET_COUNT() > 12000000){
+//                if(alternater == 1){
+//                    alternater = 0;
+//                    LATAbits.LATA4 = 0;
+//
+//                }else {
+//                    alternater = 1;
+//                    LATAbits.LATA4 = 1;
+//
+//                }
+//                I2C_read_multiple(0b1101011, 0x20, data, 14);
+//                dataReal[0] = (data[1]<<8) | data[0];
+//                dataReal[1] = (data[3]<<8) | data[2];
+//                dataReal[2] = (data[5]<<8) | data[4];
+//                dataReal[3] = (data[7]<<8) | data[6];
+//                dataReal[4] = (data[9]<<8) | data[8];
+//                dataReal[5] = (data[11]<<8) | data[10];
+//                dataReal[6] = (data[13]<<8) | data[12];
+//                _CP0_SET_COUNT(0);
+//            }
+//
+//            
+            if(getExpander() != 0x69){
+                LATAbits.LATA4 = 0;
+                len = sprintf(dataOut, "%d\r\n", getExpander());
+            }else{
+                LATAbits.LATA4 = 0;
             len = sprintf(dataOut, "%d\r\n", i);
+            }
             i++; // increment the index so we see a change in the text
             /* IF A LETTER WAS RECEIVED, ECHO IT BACK SO THE USER CAN SEE IT */
             if (appData.isReadComplete) {
