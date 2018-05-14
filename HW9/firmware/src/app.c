@@ -68,7 +68,11 @@ uint8_t APP_MAKE_BUFFER_DMA_READY dataOut[APP_READ_BUFFER_SIZE];
 uint8_t APP_MAKE_BUFFER_DMA_READY readBuffer[APP_READ_BUFFER_SIZE];
 int len, i = 0;
 int startTime = 0; // to remember the loop time
-
+int writeToScreen = 0;
+int counter = 0;
+int alternater = 1;
+unsigned char data[14];
+short dataReal[7];
 // *****************************************************************************
 /* Application Data
 
@@ -85,6 +89,54 @@ int startTime = 0; // to remember the loop time
  */
 
 APP_DATA appData;
+
+void initExpander(){
+    
+    ANSELBbits.ANSB2 = 0;
+    ANSELBbits.ANSB3 = 0;
+    i2c_master_setup();
+}
+
+void setExpander(char reg, char level){
+    i2c_master_start();
+    i2c_master_send(0b1101011<<1|0);
+    i2c_master_send(reg); // the register to write to
+    i2c_master_send(level); // the value to put in the register
+    i2c_master_stop();
+}
+unsigned char getExpander(){
+    i2c_master_start();
+    i2c_master_send(0b1101011<<1|0);
+    i2c_master_send(0x0F);
+    i2c_master_restart(); // make the restart bit
+    i2c_master_send(0b1101011<<1|1);
+    unsigned char r = i2c_master_recv(); // save the value returned
+    i2c_master_ack(1);
+    i2c_master_stop(); // make the stop bit
+    return r;
+}
+void I2C_read_multiple(unsigned char address, unsigned char reg, unsigned char * data, int length){
+    i2c_master_start();
+    i2c_master_send(0b1101011<<1|0);
+    i2c_master_send(reg);
+    i2c_master_restart(); // make the restart bit
+    i2c_master_send(0b1101011<<1|1);
+    int i = 0;
+    for(i = 0; i < length; i++){
+        data[i] = i2c_master_recv(); // save the value returned
+        if (i < (length - 1)){
+        i2c_master_ack(0);
+        }else{
+        i2c_master_ack(1);
+        }
+    }  
+    i2c_master_stop(); // make the stop bit
+}
+
+
+
+
+
 
 // *****************************************************************************
 // *****************************************************************************
@@ -306,56 +358,6 @@ bool APP_StateReset(void) {
     See prototype in app.h.
  */
 
-void initExpander(){
-    
-    ANSELBbits.ANSB2 = 0;
-    ANSELBbits.ANSB3 = 0;
-    i2c_master_setup();
-}
-
-void setExpander(char reg, char level){
-    i2c_master_start();
-    i2c_master_send(0b1101011<<1|0);
-    i2c_master_send(reg); // the register to write to
-    i2c_master_send(level); // the value to put in the register
-    i2c_master_stop();
-}
-unsigned char getExpander(){
-    i2c_master_start();
-    i2c_master_send(0b1101011<<1|0);
-    i2c_master_send(0x0F);
-    i2c_master_restart(); // make the restart bit
-    i2c_master_send(0b1101011<<1|1);
-    unsigned char r = i2c_master_recv(); // save the value returned
-    i2c_master_ack(1);
-    i2c_master_stop(); // make the stop bit
-    return r;
-}
-void I2C_read_multiple(unsigned char address, unsigned char reg, unsigned char * data, int length){
-    i2c_master_start();
-    i2c_master_send(0b1101011<<1|0);
-    i2c_master_send(reg);
-    i2c_master_restart(); // make the restart bit
-    i2c_master_send(0b1101011<<1|1);
-    int i = 0;
-    for(i = 0; i < length; i++){
-        data[i] = i2c_master_recv(); // save the value returned
-        if (i < (length - 1)){
-        i2c_master_ack(0);
-        }else{
-        i2c_master_ack(1);
-        }
-    }  
-    i2c_master_stop(); // make the stop bit
-}
-
-
-
-int alternater = 1;
-unsigned char data[14];
-short dataReal[7];
-
-
 void APP_Initialize(void) {
     /* Place the App state machine in its initial state. */
     appData.state = APP_STATE_INIT;
@@ -392,10 +394,7 @@ void APP_Initialize(void) {
     appData.readBuffer = &readBuffer[0];
 
     /* PUT YOUR LCD, IMU, AND PIN INITIALIZATIONS HERE */
-    /* Place the App state machine in its initial state. */
-    appData.state = APP_STATE_INIT;
-
-     __builtin_disable_interrupts();
+    __builtin_disable_interrupts();
 
     // set the CP0 CONFIG register to indicate that kseg0 is cacheable (0x3)
     __builtin_mtc0(_CP0_CONFIG, _CP0_CONFIG_SELECT, 0xa4210583);
@@ -414,7 +413,7 @@ void APP_Initialize(void) {
     TRISAbits.TRISA4 = 0; // output pin
     TRISBbits.TRISB4 = 1; // input pin button
     LATAbits.LATA4 = 1; // sets A4 to high initially for testing
-     // keeps track if on or off
+    
     initExpander();
     
     setExpander(0x10,0b10000010); //set up accelarometer
@@ -422,6 +421,11 @@ void APP_Initialize(void) {
     setExpander(0x12,0b00000100);
 
     __builtin_enable_interrupts();
+    
+    
+    
+    
+
     startTime = _CP0_GET_COUNT();
 }
 
@@ -487,6 +491,10 @@ void APP_Tasks(void) {
                         /* YOU COULD PUT AN IF STATEMENT HERE TO DETERMINE WHICH LETTER
                         WAS RECEIVED (USUALLY IT IS THE NULL CHARACTER BECAUSE NOTHING WAS
                       TYPED) */
+                if(readBuffer[0] == 'r'){
+                    writeToScreen = 1;
+                    counter = 0;
+                }
 
                 if (appData.readTransferHandle == USB_DEVICE_CDC_TRANSFER_HANDLE_INVALID) {
                     appData.state = APP_STATE_ERROR;
@@ -507,7 +515,7 @@ void APP_Tasks(void) {
              * The isReadComplete flag gets updated in the CDC event handler. */
 
              /* WAIT FOR 5HZ TO PASS OR UNTIL A LETTER IS RECEIVED */
-            if (appData.isReadComplete || _CP0_GET_COUNT() - startTime > (48000000 / 2 / 5)) {
+            if (appData.isReadComplete || _CP0_GET_COUNT() - startTime > (48000000 / 2 / 100)) {
                 appData.state = APP_STATE_SCHEDULE_WRITE;
             }
 
@@ -530,72 +538,63 @@ void APP_Tasks(void) {
             /* PUT THE TEXT YOU WANT TO SEND TO THE COMPUTER IN dataOut
             AND REMEMBER THE NUMBER OF CHARACTERS IN len */
             /* THIS IS WHERE YOU CAN READ YOUR IMU, PRINT TO THE LCD, ETC */
-//            
-//            
-//            
-//            
-//            char message1[30];
-//            if(getExpander() != 0x69){
-//                while(1){
-//                    LATAbits.LATA4 = 0;
-//                }
-//            }
-//    //        if(getExpander()>>7 == 1){
-//    //            setExpander(0xA,1);
-//    //        }else{
-//    //            setExpander(0xA,0);
-//    //        }
-//            // use _CP0_SET_COUNT(0) and _CP0_GET_COUNT() to test the PIC timing
-//            // remember the core timer runs at half the sysclk
-//            // sysclk is at 48MHz
-//            while(PORTBbits.RB4 == 0){
-//                //do nothing and pause 
-//            }
-//            // core timer half of sysclk -- core timer is 24MHZ, want full cycle 2HZ, divide by 12000
-//            if(_CP0_GET_COUNT() > 12000000){
-//                if(alternater == 1){
-//                    alternater = 0;
-//                    LATAbits.LATA4 = 0;
-//
-//                }else {
-//                    alternater = 1;
-//                    LATAbits.LATA4 = 1;
-//
-//                }
-//                I2C_read_multiple(0b1101011, 0x20, data, 14);
-//                dataReal[0] = (data[1]<<8) | data[0];
-//                dataReal[1] = (data[3]<<8) | data[2];
-//                dataReal[2] = (data[5]<<8) | data[4];
-//                dataReal[3] = (data[7]<<8) | data[6];
-//                dataReal[4] = (data[9]<<8) | data[8];
-//                dataReal[5] = (data[11]<<8) | data[10];
-//                dataReal[6] = (data[13]<<8) | data[12];
-//                _CP0_SET_COUNT(0);
-//            }
-//
-//            
+            
+            char message1[30];
             if(getExpander() != 0x69){
-                LATAbits.LATA4 = 0;
-                len = sprintf(dataOut, "%d\r\n", getExpander());
+                sprintf(message1,"PROBLEM");
+                while(1){;}
+            }
+
+            while(PORTBbits.RB4 == 0){
+                //do nothing and pause 
+            }
+            // core timer half of sysclk -- core timer is 24MHZ, want full cycle 2HZ, divide by 12000
+            if(_CP0_GET_COUNT() > 240000){
+                if(alternater == 1){
+                    alternater = 0;
+                    LATAbits.LATA4 = 0;
+
+                }else {
+                    alternater = 1;
+                    LATAbits.LATA4 = 1;
+
+                }
+                I2C_read_multiple(0b1101011, 0x20, data, 14);
+                dataReal[0] = (data[1]<<8) | data[0];
+                dataReal[1] = (data[3]<<8) | data[2];
+                dataReal[2] = (data[5]<<8) | data[4];
+                dataReal[3] = (data[7]<<8) | data[6];
+                dataReal[4] = (data[9]<<8) | data[8];
+                dataReal[5] = (data[11]<<8) | data[10];
+                dataReal[6] = (data[13]<<8) | data[12];
+    //            char message2[30];
+    //            sprintf(message2,"x %d y: %d    ",dataReal[4],dataReal[5]);
+    //            drawString(28,32,message2,0xFFFF,0x0000);  
+
+               
+
+
+                _CP0_SET_COUNT(0);
+            
+            }
+            
+            
+            
+            
+            
+            
+            if((writeToScreen == 1) && counter < 100){
+            len = sprintf(dataOut, "%d %d %d %d %d %d %d \r\n",counter, dataReal[4],dataReal[5],dataReal[6],dataReal[1],dataReal[2],dataReal[3]);
             }else{
-                LATAbits.LATA4 = 0;
-            len = sprintf(dataOut, "%d\r\n", i);
+            len = 1;
+            dataOut[0] = 0;    
             }
-            i++; // increment the index so we see a change in the text
-            /* IF A LETTER WAS RECEIVED, ECHO IT BACK SO THE USER CAN SEE IT */
-            if (appData.isReadComplete) {
-                USB_DEVICE_CDC_Write(USB_DEVICE_CDC_INDEX_0,
-                        &appData.writeTransferHandle,
-                        appData.readBuffer, 1,
-                        USB_DEVICE_CDC_TRANSFER_FLAGS_DATA_COMPLETE);
-            }
-            /* ELSE SEND THE MESSAGE YOU WANTED TO SEND */
-            else {
+            counter++; // increment the index so we see a change in the text
+
                 USB_DEVICE_CDC_Write(USB_DEVICE_CDC_INDEX_0,
                         &appData.writeTransferHandle, dataOut, len,
                         USB_DEVICE_CDC_TRANSFER_FLAGS_DATA_COMPLETE);
                 startTime = _CP0_GET_COUNT(); // reset the timer for acurate delays
-            }
             break;
 
         case APP_STATE_WAIT_FOR_WRITE_COMPLETE:
