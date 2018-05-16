@@ -75,10 +75,13 @@ unsigned char data[14];
 short dataReal[7];
 float mafBuf[10];
 int mafSize = 10;
+float firBuf[7];
+int firSize = 7;
+float firWeight[7] = {0.0212, 0.0897, 0.2343, 0.3094, 0.2343, 0.0897, 0.0212};
 int currloc = 0;
 float iifVal = 0;
-float alpha = .8;
-float beta = 1 - alpha;
+float alpha = .7;
+float beta = .3;
 
 // *****************************************************************************
 /* Application Data
@@ -430,6 +433,10 @@ void APP_Initialize(void) {
     for(i = 0; i < mafSize; i++){
         mafBuf[i] = 0.0;
     }
+    for(i = 0; i < firSize; i++){
+        firBuf[i] = 0.0;
+    }
+    
     
     
     __builtin_enable_interrupts();
@@ -588,19 +595,26 @@ void APP_Tasks(void) {
             //MAF STUFF
             
             mafBuf[currloc%mafSize] =  dataReal[6];
-            currloc++;
-            int avg;
+            
+            float avg;
             int j;
             for(j = 0; j < mafSize; j++){
                 avg += mafBuf[j];
             }
             avg /= mafSize;
             
+            //FIR STUFF
+            float firAvg;
+            firBuf[currloc%firSize] =  dataReal[6];
+            for(j = 0; j < firSize; j++){
+                firAvg += firBuf[(currloc+ j)%firSize] * firWeight[j];
+            }
+            currloc++;
             //IIF STUFF
             iifVal = alpha * iifVal + beta * dataReal[6];
                 
                 
-            len = sprintf(dataOut, "%d %d %d %d %d %d %d \r\n",counter, dataReal[4],dataReal[5],dataReal[6],dataReal[1],dataReal[2],dataReal[3]);
+            len = sprintf(dataOut, "%d %d %f %f %f  \r\n",counter, dataReal[6],avg,iifVal,firAvg);
             }else{
             len = 1;
             dataOut[0] = 0;    
