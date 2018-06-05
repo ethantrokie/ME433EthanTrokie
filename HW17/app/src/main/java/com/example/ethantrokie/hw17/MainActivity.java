@@ -36,8 +36,11 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
     private Paint paint1 = new Paint();
     private TextView mTextView;
     SeekBar myControl;
+    SeekBar myControl2;
     TextView myTextView;
     int thresh; // comparison value
+    int COM;
+    int T;
 
     static long prevtime = 0; // for FPS calculation
 
@@ -66,10 +69,13 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
             mTextView.setText("no camera permissions");
         }
         myControl = (SeekBar) findViewById(R.id.seek1);
+        myControl2 = (SeekBar) findViewById(R.id.seek2);
+
 
         myTextView = (TextView) findViewById(R.id.textView01);
         myTextView.setText("Enter whatever you Like!");
         thresh = 0;
+        T = 0;
         setMyControlListener();
 
     }
@@ -113,22 +119,40 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
             int startY = 0; // which row in the bitmap to analyze to read
             bmp.getPixels(pixels, 0, bmp.getWidth(), 0, 0, bmp.getWidth(), bmp.getHeight());
 
-            // in the row, see if there is more green than red
-            for(int j  = 0; j < bmp.getHeight(); j++) {
-                for (int i = 0; i < bmp.getWidth(); i++) {
-                    if (((green(pixels[i+j*bmp.getWidth()]) - red(pixels[i+j*bmp.getWidth()])) > thresh)  && ((green(pixels[i+j*bmp.getWidth()]) - blue(pixels[i+j*bmp.getWidth()])) > thresh)  && (green(pixels[i+j*bmp.getWidth()]) > 60)  && (blue(pixels[i+j*bmp.getWidth()]) < 170) && (red(pixels[i+j*bmp.getWidth()]) <170)) {
-                        pixels[i+ j*bmp.getWidth()] = rgb(0, 255, 0); // over write the pixel with pure green
-                    }
+            int sum_mr = 0; // the sum of the mass times the radius
+            int sum_m = 0; // the sum of the masses
+            for (int i = 0; i < bmp.getWidth(); i++) {
+                //thresh is ~40 
+                if ( ((red(pixels[i]) - (green(pixels[i])+blue(pixels[i]))/2) > -thresh)  && ((red(pixels[i]) - (green(pixels[i])+blue(pixels[i]))/2) < thresh) &&(red(pixels[i])  > T)) {
+                    pixels[i] = rgb(1, 1, 1); // set the pixel to almost 100% black
+
+                    sum_m = sum_m + green(pixels[i])+red(pixels[i])+blue(pixels[i]);
+                    sum_mr = sum_mr + (green(pixels[i])+red(pixels[i])+blue(pixels[i]))*i;
                 }
             }
-
-            // update the row
-            bmp.setPixels(pixels, 0, bmp.getWidth(), 0, 0, bmp.getWidth(), bmp.getHeight());
+            // only use the data if there were a few pixels identified, otherwise you might get a divide by 0 error
+            if(sum_m>5){
+                COM = sum_mr / sum_m;
+            }
+            else{
+                COM = 0;
+            }
+            // in the row, see if there is more green than red
+//            for(int j  = 0; j < bmp.getHeight(); j++) {
+//                for (int i = 0; i < bmp.getWidth(); i++) {
+//                    if (((green(pixels[i+j*bmp.getWidth()]) - red(pixels[i+j*bmp.getWidth()])) > thresh)  && ((green(pixels[i+j*bmp.getWidth()]) - blue(pixels[i+j*bmp.getWidth()])) > thresh)  && (green(pixels[i+j*bmp.getWidth()]) > 60)  && (blue(pixels[i+j*bmp.getWidth()]) < 170) && (red(pixels[i+j*bmp.getWidth()]) <170)) {
+//                        pixels[i+ j*bmp.getWidth()] = rgb(0, 255, 0); // over write the pixel with pure green
+//                    }
+//                }
+//            }
+//
+//            // update the row
+//            bmp.setPixels(pixels, 0, bmp.getWidth(), 0, 0, bmp.getWidth(), bmp.getHeight());
         }
 
         // draw a circle at some position
         int pos = 50;
-        canvas.drawCircle(pos, 240, 5, paint1); // x position, y position, diameter, color
+        canvas.drawCircle(COM, 240, 5, paint1); // x position, y position, diameter, color
 
         // write the pos as text
         canvas.drawText("pos = " + pos, 10, 200, paint1);
@@ -162,7 +186,27 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
 
             }
         });
+        myControl2.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
+
+            int progressChanged = 0;
+
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                progressChanged = progress;
+                T = progress;
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
     }
+
 
 }
 
