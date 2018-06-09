@@ -122,7 +122,7 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
             int sum_mr = 0; // the sum of the mass times the radius
             int sum_m = 0; // the sum of the masses
             for (int i = 0; i < bmp.getWidth(); i++) {
-                //thresh is ~40 
+                //thresh is ~40
                 if ( ((red(pixels[i]) - (green(pixels[i])+blue(pixels[i]))/2) > -thresh)  && ((red(pixels[i]) - (green(pixels[i])+blue(pixels[i]))/2) < thresh) &&(red(pixels[i])  > T)) {
                     pixels[i] = rgb(1, 1, 1); // set the pixel to almost 100% black
 
