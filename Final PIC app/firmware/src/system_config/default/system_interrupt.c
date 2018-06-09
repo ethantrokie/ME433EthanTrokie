@@ -71,7 +71,6 @@ SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
 
 int eint1 = 0;
 int eint2 = 0;
-int speed = 80; // max speed is 80
 int kp = 20;
 int ki = .1;
 void __ISR(_USB_1_VECTOR, ipl4AUTO) _IntHandlerUSBInstance0(void)
@@ -80,34 +79,35 @@ void __ISR(_USB_1_VECTOR, ipl4AUTO) _IntHandlerUSBInstance0(void)
 }
 void __ISR(_TIMER_4_VECTOR, IPL4SOFT) Timer4ISR(void) {
   // code for PI control goes here
-//    if (TMR3 > 1000){
-//        LATAbits.LATA4 ^= 1;
-//        TMR3 = 0;
-//    }
+    if (TMR3 - TMR4 < 100){
+        LATAbits.LATA4 = 1;
+    }else{
+        LATAbits.LATA4 = 1;
+    }
     //right wheel
     int e = speed - (TMR5/TMR4);
     eint1 = eint1 + e;
-    int u = kp * e + ki * eint1;
+    u1 = kp * e + ki * eint1;
     if(u > 2399){
         u = 2399;
     }
     if(u < 0){
         u = 0;
     }
-    OC1RS = u;
+//    OC1RS = u1;
 
     //left wheel
     int e2 = speed - (TMR3/TMR4);
     eint2 = eint2 + e2;
-    u = kp * e2 + ki * eint2;
+    u2 = kp * e2 + ki * eint2;
     if(u > 2399){
         u = 2399;
     }
     if(u < 0){
         u = 0;
     }
-    OC4RS = u;
-    
+//    OC4RS = u2;
+ 
     
   IFS0bits.T4IF = 0; // clear interrupt flag, last line
     TMR3 = 0; // left wheel

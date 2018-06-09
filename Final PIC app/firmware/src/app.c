@@ -71,6 +71,7 @@ char rx[64]; // the raw data
 int rxPos = 0; // how much data has been stored
 int gotRx = 0; // the flag
 int rxVal = 0; // a place to store the int that was received
+int kp = 10;
 
 // *****************************************************************************
 /* Application Data
@@ -384,6 +385,7 @@ void APP_Initialize(void) {
     OC4RS = 2399;;
     TRISAbits.TRISA4 = 0; // output pin
     LATAbits.LATA4 = 0; // sets A4 to high initially for testing
+    speed = 80;
     startTime = _CP0_GET_COUNT();
 }
 
@@ -468,6 +470,27 @@ void APP_Tasks(void) {
                         /* YOU COULD PUT AN IF STATEMENT HERE TO DETERMINE WHICH LETTER
                         WAS RECEIVED (USUALLY IT IS THE NULL CHARACTER BECAUSE NOTHING WAS
                       TYPED) */
+                
+                 error = rx[0] - 240; // 240 means the dot is in the middle of the screen
+                    if (error<0) { // slow down the left motor to steer to the left
+                        error  = -error;
+                        left = u1 - kp*error;
+                        right = u2;
+                        if (left < 0){
+                            left = 0;
+                        }
+                    }
+                    else { // slow down the right motor to steer to the right
+                        right = u2 - kp*error;
+                        left = u1;
+                        if (right<0) {
+                            right = 0;
+                        }
+                    }
+                    OC1RS = left;
+                    OC4RS = right;
+                
+                
 
                 if (appData.readTransferHandle == USB_DEVICE_CDC_TRANSFER_HANDLE_INVALID) {
                     appData.state = APP_STATE_ERROR;
