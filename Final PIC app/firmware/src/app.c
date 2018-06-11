@@ -71,7 +71,9 @@ char rx[64]; // the raw data
 int rxPos = 0; // how much data has been stored
 int gotRx = 0; // the flag
 int rxVal = 0; // a place to store the int that was received
-float kp1 = 5.2;
+float kp1 = 3.5;
+int error;
+int kp2 = .8;
 
 // *****************************************************************************
 /* Application Data
@@ -309,7 +311,7 @@ bool APP_StateReset(void) {
   Remarks:
     See prototype in app.h.
  */
-int error;
+
 void APP_Initialize(void) {
     /* Place the App state machine in its initial state. */
     appData.state = APP_STATE_INIT;
@@ -480,14 +482,14 @@ void APP_Tasks(void) {
                     if (error<0) { // slow down the left motor to steer to the left
                         error  = -1* error;
                         left = u2 - (kp1*error);
-                        right = u1;
+                        right = u1 + (kp2*error);
                         if (left < 0){
                             left = 0;
                         }
                     }
                     else { // slow down the right motor to steer to the right
                         right = u1 - (kp1*error);
-                        left = u2;
+                        left = u2 + (kp2*error);;
                         if (right<0) {
                             right = 0;
                         }

@@ -73,7 +73,7 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
     private UsbSerialPort sPort;
     private final ExecutorService mExecutor = Executors.newSingleThreadExecutor();
     private SerialInputOutputManager mSerialIoManager;
-
+    int prev;
     int thresh; // comparison value
     int COM;
     int T;
@@ -129,6 +129,7 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
         thresh = 100;
         T = 0;
         startTrans = 0;
+        prev = 240;
     }
     public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
         mCamera = Camera.open();
@@ -173,7 +174,7 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
             int sum_m = 0; // the sum of the masses
             for (int i = 0; i < bmp.getWidth(); i++) {
                 //thresh is ~40
-                if ((green(pixels[i+ bmp.getWidth()*bmp.getHeight()/4]) > thresh+40)  || (blue(pixels[i+ bmp.getWidth()*bmp.getHeight()/4]) > thresh + 40 -T) || (red(pixels[i+ bmp.getWidth()*bmp.getHeight()/4]) > thresh+40)) {
+                if ((green(pixels[i]) > thresh+40)  || (blue(pixels[i]) > thresh + 40 -T) || (red(pixels[i]) > thresh+40)) {
                 //if ( ((red(pixels[i]) - (green(pixels[i])+blue(pixels[i]))/2) > -thresh)  && ((red(pixels[i]) - (green(pixels[i])+blue(pixels[i]))/2) < thresh) &&(red(pixels[i])  > T)) {
                     pixels[i] = rgb(1, 1, 1); // set the pixel to almost 100% black
 
@@ -184,9 +185,10 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
             // only use the data if there were a few pixels identified, otherwise you might get a divide by 0 error
             if(sum_m>5){
                 COM = sum_mr / sum_m;
+                prev = COM;
             }
             else{
-                COM = 0;
+                COM = prev;
             }
             // in the row, see if there is more green than red
 //            for(int j  = 0; j < bmp.getHeight(); j++) {

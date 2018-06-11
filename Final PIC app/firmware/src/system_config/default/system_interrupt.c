@@ -76,8 +76,8 @@ void __ISR(_USB_1_VECTOR, ipl4AUTO) _IntHandlerUSBInstance0(void)
 }
 void __ISR(_TIMER_4_VECTOR, IPL4SOFT) Timer4ISR(void) {
     speed = 4.5;
-    int kp = 65;
-    float ki = .50;
+    int kp = 40;
+    float ki = .45;
     float e;
     float e2;
   // code for PI control goes here
@@ -89,11 +89,11 @@ void __ISR(_TIMER_4_VECTOR, IPL4SOFT) Timer4ISR(void) {
     //right wheel
     e = speed - TMR5;
     eint1 = eint1 + e;
-    if(eint1 > 1500){
-        eint1 = 1500;
+    if(eint1 > 1800){
+        eint1 = 1800;
     }
-    if(eint1 < -1500){
-        eint1 = -1500;
+    if(eint1 < -1800){
+        eint1 = -1800;
     }
     
     u1 = (kp * e) + (ki * eint1);
@@ -108,11 +108,11 @@ void __ISR(_TIMER_4_VECTOR, IPL4SOFT) Timer4ISR(void) {
     //left wheel
     e2 = speed - TMR3;
     eint2 = eint2 + e2;
-    if(eint2 > 1500){
-        eint2 = 1500;
+    if(eint2 > 1800){
+        eint2 = 1800;
     }
-    if(eint2 < -1500){
-        eint2 = -1500;
+    if(eint2 < -1800){
+        eint2 = -1800;
     }
     u2 = (kp * e2) + (ki * eint2);
     if(u2 > 2399){
