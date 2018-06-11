@@ -76,7 +76,7 @@ void __ISR(_USB_1_VECTOR, ipl4AUTO) _IntHandlerUSBInstance0(void)
 }
 void __ISR(_TIMER_4_VECTOR, IPL4SOFT) Timer4ISR(void) {
     speed = 4.5;
-    int kp = 40;
+    int kp = 30;
     float ki = .45;
     float e;
     float e2;

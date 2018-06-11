@@ -73,7 +73,7 @@ int gotRx = 0; // the flag
 int rxVal = 0; // a place to store the int that was received
 float kp1 = 3.5;
 int error;
-int kp2 = .8;
+int kp2 = .81;
 
 // *****************************************************************************
 /* Application Data

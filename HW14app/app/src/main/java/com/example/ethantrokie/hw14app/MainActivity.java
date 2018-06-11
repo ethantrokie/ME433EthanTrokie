@@ -174,7 +174,8 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
             int sum_m = 0; // the sum of the masses
             for (int i = 0; i < bmp.getWidth(); i++) {
                 //thresh is ~40
-                if ((green(pixels[i]) > thresh+40)  || (blue(pixels[i]) > thresh + 40 -T) || (red(pixels[i]) > thresh+40)) {
+                if (((green(pixels[i]) - red(pixels[i])) > thresh)  && ((green(pixels[i]) - blue(pixels[i])) > thresh)  && (green(pixels[i]) > 60)  && (blue(pixels[i]) < 170) && (red(pixels[i]) <170)){
+                //if ((green(pixels[i]) > thresh+40)  || (blue(pixels[i]) > thresh + 40 -T) || (red(pixels[i]) > thresh+40)) {
                 //if ( ((red(pixels[i]) - (green(pixels[i])+blue(pixels[i]))/2) > -thresh)  && ((red(pixels[i]) - (green(pixels[i])+blue(pixels[i]))/2) < thresh) &&(red(pixels[i])  > T)) {
                     pixels[i] = rgb(1, 1, 1); // set the pixel to almost 100% black
 
