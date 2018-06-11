@@ -69,47 +69,62 @@ SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
 // *****************************************************************************
 // *****************************************************************************
 
-int eint1 = 0;
-int eint2 = 0;
-int kp = 20;
-int ki = .1;
+
 void __ISR(_USB_1_VECTOR, ipl4AUTO) _IntHandlerUSBInstance0(void)
 {
     DRV_USBFS_Tasks_ISR(sysObj.drvUSBObject);
 }
 void __ISR(_TIMER_4_VECTOR, IPL4SOFT) Timer4ISR(void) {
+    speed = 4.5;
+    int kp = 65;
+    float ki = .50;
+    float e;
+    float e2;
   // code for PI control goes here
-    if (TMR3 - TMR4 < 100){
-        LATAbits.LATA4 = 1;
-    }else{
-        LATAbits.LATA4 = 1;
-    }
+//    if (((TMR3/TMR4) - (TMR5/TMR4))*10 < 10){
+//        LATAbits.LATA4 = 1;
+//    }else{
+//        LATAbits.LATA4 = 1;
+//    }
     //right wheel
-    int e = speed - (TMR5/TMR4);
+    e = speed - TMR5;
     eint1 = eint1 + e;
-    u1 = kp * e + ki * eint1;
-    if(u > 2399){
-        u = 2399;
+    if(eint1 > 1500){
+        eint1 = 1500;
     }
-    if(u < 0){
-        u = 0;
+    if(eint1 < -1500){
+        eint1 = -1500;
+    }
+    
+    u1 = (kp * e) + (ki * eint1);
+    if(u1 > 2399){
+        u1 = 2399;
+    }
+    if(u1 < 0){
+        u1 = 0;
     }
 //    OC1RS = u1;
 
     //left wheel
-    int e2 = speed - (TMR3/TMR4);
+    e2 = speed - TMR3;
     eint2 = eint2 + e2;
-    u2 = kp * e2 + ki * eint2;
-    if(u > 2399){
-        u = 2399;
+    if(eint2 > 1500){
+        eint2 = 1500;
     }
-    if(u < 0){
-        u = 0;
+    if(eint2 < -1500){
+        eint2 = -1500;
     }
-//    OC4RS = u2;
- 
+    u2 = (kp * e2) + (ki * eint2);
+    if(u2 > 2399){
+        u2 = 2399;
+    }
+    if(u2 < 0){
+        u2 = 0;
+    }
+//        OC1RS = u1;
+//        OC4RS = u2;
     
-  IFS0bits.T4IF = 0; // clear interrupt flag, last line
+    IFS0bits.T4IF = 0; // clear interrupt flag, last line
     TMR3 = 0; // left wheel
     TMR4 = 0; // dt
     TMR5 = 0; // right wheel

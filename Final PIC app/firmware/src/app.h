@@ -83,9 +83,12 @@ extern "C" {
     This enumeration defines the valid application states.  These states
     determine the behavior of the application at various times.
 */
-int speed;
+float speed;
 int u1;
 int u2;
+float eint1 = 0;
+float eint2 = 0;
+
 typedef enum
 {
 	/* Application's state machine's initial state. */

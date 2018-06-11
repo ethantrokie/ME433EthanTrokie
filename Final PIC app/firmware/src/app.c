@@ -71,7 +71,7 @@ char rx[64]; // the raw data
 int rxPos = 0; // how much data has been stored
 int gotRx = 0; // the flag
 int rxVal = 0; // a place to store the int that was received
-int kp = 10;
+float kp1 = 5.2;
 
 // *****************************************************************************
 /* Application Data
@@ -309,7 +309,7 @@ bool APP_StateReset(void) {
   Remarks:
     See prototype in app.h.
  */
-
+int error;
 void APP_Initialize(void) {
     /* Place the App state machine in its initial state. */
     appData.state = APP_STATE_INIT;
@@ -382,10 +382,11 @@ void APP_Initialize(void) {
     IEC0bits.T4IE = 1; // enable interrupt for Timer4
     
     OC1RS = 2399; //right wheel when looking in driving direction // read timer 5
-    OC4RS = 2399;;
+    OC4RS = 2399;
     TRISAbits.TRISA4 = 0; // output pin
     LATAbits.LATA4 = 0; // sets A4 to high initially for testing
-    speed = 80;
+    error = 0;
+    
     startTime = _CP0_GET_COUNT();
 }
 
@@ -470,25 +471,30 @@ void APP_Tasks(void) {
                         /* YOU COULD PUT AN IF STATEMENT HERE TO DETERMINE WHICH LETTER
                         WAS RECEIVED (USUALLY IT IS THE NULL CHARACTER BECAUSE NOTHING WAS
                       TYPED) */
+                int left;
+                int right;
                 
-                 error = rx[0] - 240; // 240 means the dot is in the middle of the screen
+                
+                 error = error*.05 + (rxVal - 240)*.90; // 240 means the dot is in the middle of the screen
+                 //error = 0;
                     if (error<0) { // slow down the left motor to steer to the left
-                        error  = -error;
-                        left = u1 - kp*error;
-                        right = u2;
+                        error  = -1* error;
+                        left = u2 - (kp1*error);
+                        right = u1;
                         if (left < 0){
                             left = 0;
                         }
                     }
                     else { // slow down the right motor to steer to the right
-                        right = u2 - kp*error;
-                        left = u1;
+                        right = u1 - (kp1*error);
+                        left = u2;
                         if (right<0) {
                             right = 0;
                         }
                     }
-                    OC1RS = left;
-                    OC4RS = right;
+                    OC1RS = right;
+                    OC4RS = left;
+                    rxVal = u1;
                 
                 
 
